@@ -58,14 +58,16 @@ void setup() {
   
   
   
-  // Wire.begin(4, 5); // G4, G5
+  Wire.begin(4, 5); // G4, G5
 
-  // mpu.initialize();
+  mpu.initialize();
 
-  // if (!mpu.testConnection()) {
-  //   Serial.println("ERROR");
-  //   while (1);
-  // }
+  if (!mpu.testConnection()) {
+    Serial.println("ERROR: MPU6050 not connected");
+    while (1) {
+      delay(1000);
+    }
+  }
   
   
   i2s_config_t i2s_config = {
@@ -160,43 +162,43 @@ void updatePendulum(float input_force) {
   // output = alpha2; //alpha2を出力パラメータとする
 }
 
-// --- 描画 ---
-// void drawPendulum() {
-//   // スプライトを黒で塗りつぶす
-//   sprite.fillSprite(BLACK);
+--- 描画 ---
+void drawPendulum() {
+  // スプライトを黒で塗りつぶす
+  sprite.fillSprite(BLACK);
 
-//   // 支点の座標 (画面上部中央)
-//   int cx = 120;
-//   int cy = 20;
+  // 支点の座標 (画面上部中央)
+  int cx = 120;
+  int cy = 20;
 
-//   // 長さをピクセル単位にスケール (0.1m -> 50ピクセル)
-//   int draw_l1 = 50;
-//   int draw_l2 = 50;
+  // 長さをピクセル単位にスケール (0.1m -> 50ピクセル)
+  int draw_l1 = 50;
+  int draw_l2 = 50;
 
-//   int x1 = cx + draw_l1 * sin(theta1);
-//   int y1 = cy + draw_l1 * cos(theta1);
+  int x1 = cx + draw_l1 * sin(theta1);
+  int y1 = cy + draw_l1 * cos(theta1);
 
-//   int x2 = x1 + draw_l2 * sin(theta2);
-//   int y2 = y1 + draw_l2 * cos(theta2);
+  int x2 = x1 + draw_l2 * sin(theta2);
+  int y2 = y1 + draw_l2 * cos(theta2);
 
-//   // 振り子の棒を描画
-//   sprite.drawLine(cx, cy, x1, y1, WHITE);
-//   sprite.drawLine(x1, y1, x2, y2, RED);
+  // 振り子の棒を描画
+  sprite.drawLine(cx, cy, x1, y1, WHITE);
+  sprite.drawLine(x1, y1, x2, y2, RED);
 
-//   // 振り子の質点(重り)と支点を描画
-//   sprite.fillCircle(cx, cy, 3, GREEN); // 支点
-//   sprite.fillCircle(x1, y1, 5, WHITE);
-//   sprite.fillCircle(x2, y2, 5, RED);
+  // 振り子の質点(重り)と支点を描画
+  sprite.fillCircle(cx, cy, 3, GREEN); // 支点
+  sprite.fillCircle(x1, y1, 5, WHITE);
+  sprite.fillCircle(x2, y2, 5, RED);
 
-//   // 入力された加速度の値を画面左上に表示
-//   sprite.setCursor(5, 5);
-//   sprite.setTextSize(1);
-//   sprite.setTextColor(WHITE);
-//   sprite.printf("In: %.2f", ax);
+  // 入力された加速度の値を画面左上に表示
+  sprite.setCursor(5, 5);
+  sprite.setTextSize(1);
+  sprite.setTextColor(WHITE);
+  sprite.printf("In: %.2f", ax);
 
-//   // メモリ上のスプライトを画面に一気に転送
-//   sprite.pushSprite(0, 0);
-// }
+  // メモリ上のスプライトを画面に一気に転送
+  sprite.pushSprite(0, 0);
+}
 
 // --- メインループ ---
 void loop() {
@@ -226,22 +228,18 @@ void loop() {
   if (ax_g < 0){
     input = input*(-1);
   }
-  // Serial.print('max');
-  // Serial.print(max_a);
-  // Serial.print('output');
-  Serial.print(input);
-  Serial.print(",");
-  Serial.print(ax_g);
-  Serial.print(",");
-  Serial.print(ay_g);
-  Serial.print(",");
-  Serial.println(az_g);
-
   // dt=0.004として、0.02秒(20ms)進めるために5回ループして計算
   // こうすることで物理シミュレーションの発散(爆発)を防ぎます
   for(int i = 0; i < 5; i++){
     updatePendulum(input*10);
   }
+
+  // Python側の受信仕様: output,theta1,theta2
+  Serial.print(input);
+  Serial.print(",");
+  Serial.print(theta1);
+  Serial.print(",");
+  Serial.println(theta2);
 
   // 描画
   // drawPendulum();

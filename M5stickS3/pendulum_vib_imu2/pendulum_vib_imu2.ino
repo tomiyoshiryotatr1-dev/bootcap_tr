@@ -32,13 +32,15 @@ float theta2 = 0.1; //3.14 / 2;
 float omega1 = 0.0;
 float omega2 = 0.0;
 
-float dt = 0.004;
+float dt = 0.04; //0.004;
 
 // IMU値 (加速度)
 float ax, ay, az;
 float max_a = 0.01;
 
 float output = 0.0;
+const int samples = 256;
+int16_t buffer_base[samples * 2];
 
 // M5Canvas sprite(&M5.Display);
 
@@ -95,6 +97,16 @@ void setup() {
     Serial.println("ERROR");
     while (1);
   }
+
+  
+  for (int i = 0; i < samples; i++) {
+    buffer_base[2 * i]     = 0; //(int16_t)(sin(phase_L) * 1000);   // L
+    buffer_base[2 * i + 1] = 0;                                 // R
+    
+    
+  }
+  
+  
 }
 
 
@@ -149,14 +161,17 @@ void loop() {
   float norm = sqrt(ax_g*ax_g + ay_g*ay_g + az_g*az_g);
   float input = norm - 1.0;
 
-  if (max_a < input){
-    max_a = input;
-  }
+  // if (max_a < input){
+  //   max_a = input;
+  // }
   if ( input > 5){
     input = 5;
   }
   if (ax_g < 0){
     input = input*(-1);
+  }
+  for(int i = 0; i < 1; i++){
+    updatePendulum(input*30); //10
   }
   Serial.print(output);
   Serial.print(",");
@@ -174,12 +189,10 @@ void loop() {
   Serial.print(",");
   Serial.println(theta2);
 
-  for(int i = 0; i < 1; i++){
-    updatePendulum(input*30); //10
-  }
+  
 
 
-  delay(20);
+  delay(2); //20
 
   //vib
   const int samples = 256;
@@ -195,18 +208,8 @@ void loop() {
   // Serial.println("Channel 0 (L) ON");
   // for (int iter = 0; iter < (SAMPLE_RATE / samples); iter++) { 
 
-
-  for (int iter = 0; iter < 10; iter++) { 
-    for (int i = 0; i < samples; i++) {
-      buffer[2 * i]     = (int16_t)(sin(phase_L) * 1000);   // L
-      buffer[2 * i + 1] = 0;                                 // R
-      
-      phase_L += phase_increment_L;
-      if (phase_L >= 2.0f * PI) phase_L -= 2.0f * PI;
-    }
-    size_t bytes_written;
-    i2s_write(I2S_NUM_0, buffer, sizeof(buffer), &bytes_written, 0); // portMAX_DELAY
-  }
+  
+  
   
 
   // delay(500);
@@ -218,7 +221,7 @@ void loop() {
   // for (int iter = 0; iter < (SAMPLE_RATE / samples); iter++) { 
   //こっち側を制御 抵抗側
   if (50 < output){
-    for (int iter = 0; iter < 100; iter++) { 
+    for (int iter = 0; iter < 2; iter++) { 
       for (int i = 0; i < samples; i++) {
         buffer[2 * i]     = 0;                                 // L
         buffer[2 * i + 1] = (int16_t)(sin(phase_R) * 10000);   // R
@@ -229,7 +232,14 @@ void loop() {
       size_t bytes_written;
       i2s_write(I2S_NUM_0, buffer, sizeof(buffer), &bytes_written,0); //portMAX_DELAY = 0
     }
+  }else{
+    for (int iter = 0; iter < 2; iter++) { 
+      
+      size_t bytes_written;
+      i2s_write(I2S_NUM_0, buffer_base, sizeof(buffer_base), &bytes_written, 0); // portMAX_DELAY
+    }
   }
+
 
 }
 // static float phase_L = 0.0;
