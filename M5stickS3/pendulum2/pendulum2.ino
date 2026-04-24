@@ -3,13 +3,13 @@
 
 // --- 振り子パラメータ ---
 float g = 9.8;
-float l1 = 0.1;
-float l2 = 0.1;
+float l1 = 0.05;
+float l2 = 0.05;
 float m1 = 1.0;
 float m2 = 1.0;
 
 // 状態変数
-float theta1 = 0.1; //3.14 / 2; // 初期角度を90度に
+float theta1 = 0.01; //3.14 / 2; // 初期角度を90度に
 float theta2 = 0.01; //3.14 / 2;
 float omega1 = 0.0;
 float omega2 = 0.0;
@@ -58,7 +58,7 @@ void updatePendulum(float input_force) {
   // IMUからの外力として加速度を角度の加速度(トルクに相当)として追加
   // これにより端末を振ると振り子が揺さぶられます
   alpha1 += input_force * 10.0;
-  // alpha2 += input_force * 10.0;
+  alpha2 += input_force * 10.0;
 
   // 速度と角度の更新（オイラー法）
   omega1 += alpha1 * dt;
@@ -68,8 +68,8 @@ void updatePendulum(float input_force) {
   theta2 += omega2 * dt;
 
   // 減衰（1に近いほど長引く、小さくするとすぐ止まる）
-  omega1 *= 0.999;
-  omega2 *= 0.999;
+  omega1 *= 0.99;
+  omega2 *= 0.99;
 }
 
 // --- 描画 ---
@@ -136,7 +136,7 @@ void loop() {
   // dt=0.004として、0.02秒(20ms)進めるために5回ループして計算
   // こうすることで物理シミュレーションの発散(爆発)を防ぎます
   for(int i = 0; i < 5; i++){
-    updatePendulum(input*3);
+    updatePendulum(input*20);
   }
 
   // 描画

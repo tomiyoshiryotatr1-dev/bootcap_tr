@@ -9,8 +9,8 @@
 #define I2S_DATA 7
 
 #define SAMPLE_RATE 44100
-#define FREQ_L 60   // 左(Channel 0)：低め 振動　
-#define FREQ_R 60   // 右(Channel 1)：高め
+#define FREQ_L 50   // 左(Channel 0)：低め 振動　
+#define FREQ_R 40   // 右(Channel 1)：高め
 
 // ---------------------------------------------------------
 // 【ハードウェアの設定（MAX98357AのSD_MODEピン）】
@@ -21,18 +21,18 @@
 // ※SD_MODEを未接続(フローティング)にするとLとRが混ざる(L+R)/2になりますので注意。
 // ---------------------------------------------------------
 float g = 9.8; //9.8;
-float l1 = 0.1;
-float l2 = 0.1;
-float m1 = 0.5;
-float m2 = 0.5; //1
+float l1 = 0.02; //0.05
+float l2 = 0.02;
+float m1 = 1.5;
+float m2 = 1.5; //1
 
 // 状態変数
-float theta1 = 0.1; //3.14 / 2; // 初期角度を90度に
-float theta2 = 0.1; //3.14 / 2;
+float theta1 = 0.01; //3.14 / 2; // 初期角度を90度に
+float theta2 = 0.01; //3.14 / 2;
 float omega1 = 0.0;
 float omega2 = 0.0;
 
-float dt = 0.04; //0.004;
+float dt = 0.004; //0.004;
 
 // IMU値 (加速度)
 float ax, ay, az;
@@ -161,8 +161,8 @@ void loop() {
   float norm = sqrt(ax_g*ax_g + ay_g*ay_g + az_g*az_g);
   float input = norm - 1.0;
 
-  // if (max_a < input){
-  //   max_a = input;
+  // if (max_a < output){
+  //   max_a = output;
   // }
   if ( input > 5){
     input = 5;
@@ -173,10 +173,12 @@ void loop() {
   for(int i = 0; i < 1; i++){
     updatePendulum(input*30); //10
   }
-  Serial.print(output);
-  Serial.print(",");
+
   // Serial.print(max_a);
   // Serial.print(",");
+  Serial.print(output);
+  Serial.print(",");
+  
   // Serial.print(input);
   // Serial.print(",");
   // Serial.print(ax_g);
@@ -219,15 +221,24 @@ void loop() {
   // ---------------------------------------------------
   // Serial.println("Channel 1 (R) ON");
   // for (int iter = 0; iter < (SAMPLE_RATE / samples); iter++) { 
-  //こっち側を制御 抵抗側
-  if (50 < output){
+  //こっち側を制御 抵抗側50 < output
+  int amp_r = 0;
+  if (30 < output){
     for (int iter = 0; iter < 2; iter++) { 
       for (int i = 0; i < samples; i++) {
-        buffer[2 * i]     = 0;                                 // L
-        buffer[2 * i + 1] = (int16_t)(sin(phase_R) * 10000);   // R
+        if ( output > 400){
+          output = 400;
+        }
+        amp_r = 5000*((output*output)/(400.0*400));
+        // float k = 0.001;
+        // amp_r = 6000 * (1.0 - exp(-k * abs(output)));
+        buffer[2 * i]     = 0;                                 // L(int16_t)(sin(phase_L) * 9000)
+        buffer[2 * i + 1] = (int16_t)(sin(phase_R) * amp_r);   // R
         
         phase_R += phase_increment_R;
         if (phase_R >= 2.0f * PI) phase_R -= 2.0f * PI;
+        phase_L += phase_increment_L;
+        if (phase_L >= 2.0f * PI) phase_L -= 2.0f * PI;
       }
       size_t bytes_written;
       i2s_write(I2S_NUM_0, buffer, sizeof(buffer), &bytes_written,0); //portMAX_DELAY = 0
